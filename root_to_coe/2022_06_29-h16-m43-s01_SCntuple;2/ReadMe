@@ -1,0 +1,9 @@
+py script start time : 2022_06_29-16:42:52
+
+Data File used : user.bochen.25650990.OUTPUT._000001.root
+cycle used :     SCntuple;2
+
+The python script ran was :   root_to_coe.py
+The purpose of this run was : To condense ET data from cycle into .coe file
+save to directory is /Users/ryan/Downloads/Atlas/root_to_coe/2022_06_29-h16-m43-s01_SCntuple;2/
+
