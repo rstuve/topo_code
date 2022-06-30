@@ -7,7 +7,7 @@ Creates variable 'data' which can be studied in >>> python -i open_file.py
 '''
 import uproot
 
-file = 'user.bochen.25650990.OUTPUT._000001.root'
+file = '../data/user.bochen.25650990.OUTPUT._000001.root'
 f = uproot.open(file)
 tree = f['SCntuple;2']
 data = tree.arrays()
