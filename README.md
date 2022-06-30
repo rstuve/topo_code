@@ -1,2 +1,1 @@
-# Atlas
 # topo_code
