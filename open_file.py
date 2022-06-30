@@ -1,3 +1,10 @@
+'''
+Author: Ryan Stuve
+Modified: 6/30/2022
+
+Basic program to open root file, displays event number and data points
+Creates variable 'data' which can be studied in >>> python -i open_file.py
+'''
 import uproot
 
 file = 'user.bochen.25650990.OUTPUT._000001.root'
