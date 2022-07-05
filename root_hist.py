@@ -5,8 +5,6 @@ Author: Ryan Stuve
 Moves transverse energy data from root file to array,
 presents it as histogram using matplotlib.pyplot
 
-Required to be in same directory as root file
-
 All lines with FILE DEPENDENT need to be reviewed and edited if used
 with other files besides user.bochen.25650990.OUTPUT._000001.root
 """
@@ -29,7 +27,9 @@ if v:
     print('Preprocessing...')
 
 f = TFile('../data/user.bochen.25650990.OUTPUT._000001.root') # FILE DEPENDENT
+
 tree = f.Get("SCntuple;"+cycle) # FILE DEPENDENT
+
 numEntries = tree.GetEntries()
 
 def printProgress(event):
