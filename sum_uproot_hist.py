@@ -1,5 +1,5 @@
 """
-June 23, 2022
+July 5, 2022
 Author: Ryan Stuve
 
 Converts transverse energy data from root file to awkward array,
@@ -17,22 +17,38 @@ import numpy as np
 cycle = '2' # cycle being analyzed, FILE DEPENDENT
 layer = 1
 
+etaSet = 1.4 # max eta value
+etaGran = .125 # eta granularity
+phiSet = 3.1 # max phi
+phiGran = .2
+
 # Extract data from root file
 fileName = "../data/user.bochen.25650990.OUTPUT._000001.root" #FILE DEPENDENT
 file = uproot.open(fileName)
 tree = file["SCntuple;"+cycle]  #FILE DEPENDENT
 branches = tree.arrays()
 Et = []
-for event in range(1):#len(branches)):
-    e = branches[event]
-    samples = np.asarray(e['scells_sampling'])
-    indices = np.where(samples == layer)
 
-    EtT = e["scells_Et"][indices]
-    for value in EtT:
-        Et.append(value)
-    if event % 1000 == 0:
-        print('Loading: '+str(event)[:2]+'%', end='\r')
+
+
+for event in range(len(branches)):
+    grid = np.zeros((len(np.arange(-etaSet,etaSet,etaGran)), len(np.arange(-phiSet,phiSet,phiGran))))
+    e = branches[event]
+    #samples = np.asarray(e['scells_sampling'])
+    #indices = np.where(samples == layer)
+    #etaList = e['scells_eta'][indices]
+    #phiList = e['scells_phi'][indices]
+    #EtT = e["scells_Et"][indices]
+
+
+    #for i in range(len(EtT)):
+    #    if -etaSet < etaList[i] < etaSet:
+    #        grid[int((etaList[i]+etaSet)//etaGran)][int((phiList[i]+phiSet)//phiGran)] += EtT[i]
+    if event % 100 == 0:
+        print('Loading: {}%'.format(event/100), end='\r')
+    #for item in grid[np.nonzero(grid)]:
+    #    Et.append(item)
+quit()
 
 # Plot and display data
 data = np.asarray(Et)

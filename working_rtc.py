@@ -7,7 +7,7 @@ layer per event with specified bit width, organized by eta and phi
 """
 
 ## 1) IMPORTS ___________________________
-from ROOT import TFile
+import uproot
 import os, time
 import numpy as np
 ### END Imports==============================================
@@ -19,10 +19,8 @@ bit_size = 10 # max size of .coe file entry
 allowNegEts = False
 etaSet = 1.4 # max eta value
 etaGran = .125 # eta granularity
-etaCount = etaSet*2//etaGran + 1
 phiSet = 3.1 # max phi
 phiGran = .2
-phiCount = phiSet*2//phiGran + 1
 layers = [1] # sample numbers that data is taken from
 filename = '../data/user.bochen.25650990.OUTPUT._000001.root' # if changing files or cycles, ensure cycle still
 cycle = "SCntuple;2"                                  # has ['scells_Et'] in directory
@@ -36,9 +34,9 @@ date=date_format % time.localtime()[0:3]
 print('start time :', time_start)
 
 ## 2c) SET DATA FILE/DIR ____________________________
-f = TFile('../data/user.bochen.25650990.OUTPUT._000001.root')
-tree = f.Get(cycle)
-numEntries = tree.GetEntries()
+datafile=uproot.open(filename)
+datatree = datafile[cycle].arrays()
+numOfEvents=len(datatree)
 overflow_count = 0 # keeps track of ET values too large for .coe file
 EXT='.coe'
 
@@ -89,9 +87,11 @@ def modifyEt(Et):
 
     return Et
 
-def sumBin(bin1,bin2):
-    'Sums two binary strings, returns the total as a binary string'
-    total = int(bin1,2) + int(bin2,2)
+def sumBinList(binList):
+    'Sums a list of binary strings, returns the total as a binary string'
+    total = 0
+    for bin in binList:
+        total += int(bin,2)
     returnValue = '{0:0{1}b}'.format(total,bit_size)
 
     if len(returnValue) > bit_size:
@@ -122,59 +122,35 @@ if __name__ == "__main__":
         # adds script end time at bottom of code
     ###__End of Create/write Readme.txt File =================
 
+    etaSlices = np.arange(-etaSet,etaSet,etaGran) # final eta indices
+    phiSlices = np.arange(-phiSet,phiSet,phiGran) # final phi indices
+    phiSlices = phiSlices.round(1)
+
     cycle_start=time_format % time.localtime()[0:6]
     print('loop start time :', cycle_start)
 
     for event in range(numOfEvents):
+        e = datatree[event]
         showProgress(event)
+        event = str(event)
         eventFolder = SaveDirNameEvents+'event_%s/' % event
         os.mkdir(eventFolder)
-        tree.GetEntry(event)
-        Ets=map(modifyEt, tree.scells_Et)
-        samples = tree.scells_sampling
-        etas = (np.asarray(tree.scells_eta) + etaSet) // etaGran
-        phis = (np.asarray(tree.scells_phi) + phiSet) // phiGran
+        samples = np.asarray(e['scells_sampling'])
         for layer in layers:
-            l = [(tuple[1:]) for tuple in zip(samples,etas,phis,Ets) if tuple[0] == layer]
-            l.sort()
-            eta_i = 0
-            phi_i = 0
-            currentV = '0'*bit_size
+            indices = np.where(samples == layer)
+            etaList = e['scells_eta'][indices]
+            phiList = e['scells_phi'][indices]
+            binMap=map(modifyEt, e['scells_Et'][indices]) # Modify values, convert to binary
+            etList = np.asarray(list(binMap))
 
-            finalEt = ''
-            for tuple in l:
-                if tuple[0] == eta_i: # if same eta
-                    if tuple[1] == phi_i: # if same phi
-                        currentV = sumBin(currentV, tuple[2])
-                    else:
-                        finalEt += currentV
-                        phi_i += 1
-                        while phi_i < phiCount and phi_i != tuple[1]:
-                            finalEt += '0'*bit_size
-                            phi_i += 1
-                        currentV = tuple[2]
-                elif 0 < tuple[0] < etaCount:
-                    finalEt += currentV
-                    phi_i += 1
-                    finalEt += '0'*bit_size*int(phiCount-phi_i)+'\n'
-                    eta_i += 1
-                    while eta_i < etaCount and eta_i != tuple[0]:
-                        finalEt += '0'*bit_size*int(phiCount) + '\n'
-                        eta_i += 1
-                    phi_i = 0
-                    while phi_i < phiCount and phi_i != tuple[1]:
-                        finalEt += '0'*bit_size
-                        phi_i += 1
-                    currentV = tuple[2]
-
-            finalEt += currentV
-            phi_i += 1
-            finalEt += '0'*bit_size*int(phiCount-phi_i)+'\n'
-            eta_i += 1
-            while eta_i < etaCount:
-                finalEt += '0'*bit_size*int(phiCount) + '\n'
-                eta_i += 1
-
+            finalEt = '' # Stores final grid of Et values back to back, new line for new eta slice
+            for i in etaSlices:
+                in_eta = (i<etaList) & (etaList<(i+etaGran))
+                for j in phiSlices:
+                    et = etList[np.where(in_eta & (j<phiList) & (phiList<(j+phiGran)))]
+                    t = sumBinList(et)
+                    finalEt += t
+                finalEt += '\n'
             newFileName = 'Cell_EtsLayer%s'% layer+EXT
             with open(eventFolder+newFileName, 'a') as f:
                 f.write(";InputFileName = {0}, wrote: {1}, \
