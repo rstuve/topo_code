@@ -1,4 +1,6 @@
 Most scripts require root file saved in sibling directory called "data"
+Will save all created data in this sibling directory
+Root file used for testing: user.bochen.25650990.OUTPUT._000001.root
 
 For root file to .coe files:
   - root_to_coe.py
