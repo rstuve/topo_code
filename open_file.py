@@ -3,7 +3,8 @@ Author: Ryan Stuve
 Modified: 6/30/2022
 
 Basic program to open root file, displays event number and data points
-Creates variable 'data' which can be studied in >>> python -i open_file.py
+Creates variable 'data' which can be studied with
+>>> python -i open_file.py
 '''
 import uproot
 

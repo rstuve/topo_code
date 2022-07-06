@@ -2,11 +2,8 @@
 June 26, 2022
 Author: Ryan Stuve
 
-Moves transverse energy data from root file to array,
-presents it as histogram using matplotlib.pyplot
-
-All lines with FILE DEPENDENT need to be reviewed and edited if used
-with other files besides user.bochen.25650990.OUTPUT._000001.root
+takes ET data from all layers of root file for one cycle, 
+displays it as histogram without any groupings
 """
 from ROOT import *
 import numpy as np
@@ -14,7 +11,6 @@ import matplotlib.pyplot as plt
 
 cycle = '2' # choose branch of data, FILE DEPENDENT
 v = True # print updates to stdout as script runs
-layer = 1
 
 if v:
     print('Preprocessing...')
