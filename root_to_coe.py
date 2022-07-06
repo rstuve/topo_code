@@ -1,6 +1,6 @@
 """
 Ryan Stuve
-Modified: 07/02/2022
+Modified: 07/06/2022
 
 Extracts ET data from .root file, moves into individual .coe files for each
 layer per event with specified bit width, organized by eta and phi
@@ -21,7 +21,7 @@ etaSet = 1.4 # max eta value
 etaGran = .125 # eta granularity
 etaCount = etaSet*2//etaGran + 1
 phiSet = 3.1 # max phi
-phiGran = .2
+phiGran = .1
 phiCount = phiSet*2//phiGran + 1
 layers = [1] # sample numbers that data is taken from
 filename = '../data/user.bochen.25650990.OUTPUT._000001.root' # if changing files or cycles, ensure cycle still
@@ -36,9 +36,9 @@ date=date_format % time.localtime()[0:3]
 print('start time :', time_start)
 
 ## 2c) SET DATA FILE/DIR ____________________________
-f = TFile('../data/user.bochen.25650990.OUTPUT._000001.root')
-tree = f.Get(cycle)
-numEntries = tree.GetEntries()
+file = TFile('../data/user.bochen.25650990.OUTPUT._000001.root')
+tree = file.Get(cycle)
+numOfEvents = tree.GetEntries()
 overflow_count = 0 # keeps track of ET values too large for .coe file
 EXT='.coe'
 
@@ -125,7 +125,7 @@ if __name__ == "__main__":
     cycle_start=time_format % time.localtime()[0:6]
     print('loop start time :', cycle_start)
 
-    for event in range(numOfEvents):
+    for event in range(1):#numOfEvents):
         showProgress(event)
         eventFolder = SaveDirNameEvents+'event_%s/' % event
         os.mkdir(eventFolder)
@@ -134,6 +134,7 @@ if __name__ == "__main__":
         samples = tree.scells_sampling
         etas = (np.asarray(tree.scells_eta) + etaSet) // etaGran
         phis = (np.asarray(tree.scells_phi) + phiSet) // phiGran
+
         for layer in layers:
             l = [(tuple[1:]) for tuple in zip(samples,etas,phis,Ets) if tuple[0] == layer]
             l.sort()

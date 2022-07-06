@@ -10,35 +10,41 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 
 # Get file and data
-run_folder = '2022_07_03-h17-m52-s08_SCntuple;2'
-event = 0
-layer = 1
-bit_size = 10
-etaSet = 1.4 # max eta value
-etaGran = .125 # eta granularity
-phiSet = 3.1 # max phi
-phiGran = .2
+run_folder = '2022_07_03-h20-m25-s58_SCntuple;2'
+event = 179
+layer = 0
+
 currentDir = os.getcwd()
 path = '../data/root_to_coe/' + run_folder + '/by_event/event_' + str(event) + '/'
 filename = 'Cell_EtsLayer'+str(layer)+'.coe'
 with open(path+filename) as f:
     lines = f.readlines()
 
+header = lines[0]
+bit_size = int(header[137:])
+etaSet = float(header[73:76]) # max eta value, 3 digits including decimal
+etaGran = float(header[84:89]) # eta granularity, 5 digits
+phiSet = float(header[108:111]) # max phi, 3 digits
+phiGran = float(header[119:122]) # 3 digits
+#print(bit_size, etaSet, etaGran, phiSet, phiGran) # test values
+
 # Move data into np.array
 Ets = np.empty((0,int(len(lines[4].strip())/10)))
-for line in lines[3:]:
+for line in lines[3:-1]:
     dataString = line.strip()
     EtT = [int(dataString[i:i+bit_size], 2) for i in range(0, len(dataString), bit_size)]
     Ets = np.append(Ets, np.array([EtT]), axis=0)
 
+if not np.any(Ets):
+    raise ValueError("plot requires at least 1 Et value")
 #Plot np.array
 fig = plt.figure()
-ax = fig.add_subplot(111)    # x is in axes-relative coordinates.
+ax = fig.add_subplot(111)
 cax = ax.matshow(Ets, norm = LogNorm(),extent=[-phiSet,phiSet,-etaSet,etaSet])
 plt.xlabel('$\phi$')
 plt.ylabel('$\eta$')
 plt.title("Event "+str(event)+', Layer '+str(layer),y = 1.2, pad=30,fontweight="bold")
-fig.colorbar(cax)
+cb = fig.colorbar(cax)
+cb.set_label('MeV', rotation = 0, loc = 'bottom')
 
-#plt.matshow(Ets, vmin=0, vmax=int('1'*bit_size,2),extent=[-phiSet,phiSet,-etaSet,etaSet])
 plt.show()
