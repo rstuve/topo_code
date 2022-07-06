@@ -7,12 +7,12 @@ Presents .coe file as visual histogram of energies, compared to .root histogram
 import numpy as np
 import matplotlib.pyplot as plt
 import atlas_mpl_style as ampl
-from root_hist import makeHist
+from filtered_hist import makeHist
 
 
 # Get files and data
-run_folder = '2022_07_03-h20-m25-s58_SCntuple;2'
-layer = 5
+run_folder = '2022_07_03-h20-m25-s58_SCntuple;2' # change to run folder
+layer = 5 # which layer is being compared
 numOfEvents = 1000
 max = 1000 # max value of ET
 binSize = 50 # how big of bin in MeV
