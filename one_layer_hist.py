@@ -2,10 +2,12 @@
 June 23, 2022
 Author: Ryan Stuve
 
-Converts transverse energy data from single layer of root file to array,
+Converts ET data from single layer of root file to array,
 presents it as histogram using matplotlib.pyplot
 
 does not group by eta or phi, see root_hist.py
+
+number of events can be changed in line 25
 """
 import uproot
 import matplotlib.pyplot as plt
@@ -20,7 +22,7 @@ file = uproot.open(fileName)
 tree = file["SCntuple;"+cycle]  #FILE DEPENDENT
 branches = tree.arrays()
 Et = []
-for event in range(1):#len(branches)):
+for event in range(len(branches)):
     e = branches[event]
     samples = np.asarray(e['scells_sampling'])
     indices = np.where(samples == layer)
