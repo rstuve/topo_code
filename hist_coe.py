@@ -11,9 +11,9 @@ from filtered_hist import makeHist
 
 
 # Get files and data
-run_folder = '2022_07_03-h20-m25-s58_SCntuple;2' # change to run folder
-layer = 5 # which layer is being compared
-numOfEvents = 1000
+run_folder = '2022_07_06-h13-m11-s28_SCntuple;2' # change to run folder
+layer = 1 # which layer is being compared
+numOfEvents = 1
 max = 1000 # max value of ET
 binSize = 50 # how big of bin in MeV
 
@@ -22,7 +22,7 @@ with open('../data/root_to_coe/' + run_folder + '/by_event/event_0/Cell_EtsLayer
     bit_size = int(f.readline()[137:]) # max size of Et in binary
 
 # create root data for comparison
-makeHist(numEntries = numOfEvents, progress = True, layer = layer)
+#makeHist(numEntries = numOfEvents, progress = True, layer = layer)
 npzfile = np.load('../data/npfile.npz')
 
 Et = []
@@ -40,6 +40,11 @@ for event in range(numOfEvents):
     for value in EtT:
         if value != 0: # ignore 0 values
             Et.append(value)
+            print(value)
+        else:
+            print(value)
+    #print(len(Et))
+quit()
 
 data = np.asarray(Et)
 hist, bins = np.histogram(Et, bins = int(max/binSize), range=[0,max])

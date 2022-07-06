@@ -10,9 +10,9 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 
 # Get file and data
-run_folder = '2022_07_03-h20-m25-s58_SCntuple;2' # change based off location of event
-event = 179
-layer = 0
+run_folder = '2022_07_06-h14-m00-s07_SCntuple;2' # change based off location of event
+event = 0
+layer = 1
 
 currentDir = os.getcwd()
 path = '../data/root_to_coe/' + run_folder + '/by_event/event_' + str(event) + '/'
@@ -27,7 +27,7 @@ etaSet = float(header[73:76]) # max eta value, 3 digits including decimal
 etaGran = float(header[84:89]) # eta granularity, 5 digits
 phiSet = float(header[108:111]) # max phi, 3 digits
 phiGran = float(header[119:122]) # 3 digits
-#print(bit_size, etaSet, etaGran, phiSet, phiGran) # test values
+print(bit_size, etaSet, etaGran, phiSet, phiGran) # test values
 
 # Move data into np.array
 Ets = np.empty((0,int(len(lines[4].strip())/bit_size)))

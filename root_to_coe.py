@@ -1,13 +1,10 @@
 """
 Ryan Stuve
 Modified: 07/06/2022
-
 Extracts ET data from .root file, moves into individual .coe files for each
 layer per event with specified bit width, organized by eta and phi
-
 Files stored in sibling directory named "data", must be created before run and
 contain .root file
-
 Number of event files can be changed in loop header on line 131
 """
 
@@ -18,16 +15,16 @@ import numpy as np
 ### END Imports==============================================
 
 ## 2a) USER INPUTS _____________________________
-bit_size = 14 # max size of .coe file entry
+bit_size = 10 # max size of .coe file entry
 allowNegEts = False
 etaSet = 1.4 # max eta value
 etaGran = .125 # eta granularity
 etaCount = etaSet*2//etaGran + 1 # number of eta slices, max index
 phiSet = 3.1 # max phi
-phiGran = .1
+phiGran = .2
 phiCount = phiSet*2//phiGran + 1 # number of phi slices, max index
 
-layers = [1] # layers to process, ie: [0,1,2,3,4,5] does layers 0-5
+layers = [1,2] # layers to process, ie: [0,1,2,3,4,5] does layers 0-5
 filename = '../data/user.bochen.25650990.OUTPUT._000001.root'
 cycle = "SCntuple;2"
 Reason='To condense ET data from cycle into .coe files' # printed out in readme file
@@ -40,7 +37,7 @@ date=date_format % time.localtime()[0:3]
 print('start time :', time_start)
 
 ## 2c) SET DATA FILE/DIR ____________________________
-file = TFile('../data/user.bochen.25650990.OUTPUT._000001.root')
+file = TFile(filename)
 tree = file.Get(cycle)
 numOfEvents = tree.GetEntries() # loop over all events, can be changed on line 131
 overflow_count = 0 # keeps track of ET values too large for .coe file
@@ -128,19 +125,19 @@ if __name__ == "__main__":
     cycle_start=time_format % time.localtime()[0:6]
     print('loop start time :', cycle_start)
 
-    for event in range(numOfEvents): # Can be changed to reduce events processed
+    for event in range(1):#numOfEvents): # Can be changed to reduce events processed
         showProgress(event)
         eventFolder = SaveDirNameEvents+'event_%s/' % event
         os.mkdir(eventFolder)
         tree.GetEntry(event) # reduces tree to single event, changes for each iteration
-        Ets=map(modifyEt, tree.scells_Et) # apply modification to ET values
+        Ets=list(map(modifyEt, tree.scells_Et)) # apply modification to ET values
         samples = tree.scells_sampling
         etas = (np.asarray(tree.scells_eta) + etaSet) // etaGran # reduces etas to indices starting at 0
         phis = (np.asarray(tree.scells_phi) + phiSet) // phiGran # same as etas above
 
         for layer in layers:
             # make a list of tuples with form (eta, phi, ET) for all ET data given in that layer
-            l = [(tuple[1:]) for tuple in zip(samples,etas,phis,Ets) if tuple[0] == layer]
+            l = [(tuple[1:]) for tuple in zip(samples,etas.copy(),phis.copy(),Ets.copy()) if tuple[0] == layer]
             l.sort() # sort by eta indices and then phi indices in order for loop to work
             eta_i = 0 # initialize indices at 0
             phi_i = 0
@@ -154,27 +151,28 @@ if __name__ == "__main__":
                     if tuple[1] == phi_i: # if same phi
                         currentV = sumBin(currentV, tuple[2]) # add ET to sum at that point
 
-                    else:
+                    elif tuple[1] < phiCount:
                         finalEt += currentV # write current ET to file
                         phi_i += 1 # move to next phi slice
-                        while phi_i < phiCount and phi_i != tuple[1]:
+                        while phi_i != tuple[1]:
                             finalEt += '0'*bit_size # fill grid with 0s until another data value is reached
                             phi_i += 1
                         currentV = tuple[2] # set ET sum to new data value's ET
 
                 elif 0 < tuple[0] < etaCount: # if eta in specified eta range
-                    finalEt += currentV # write current ET to file
-                    phi_i += 1 # move to next phi slice
-                    finalEt += '0'*bit_size*int(phiCount-phi_i)+'\n' # no more values in eta slice, finish line with 0s
-                    eta_i += 1 # move to next eta slice
-                    while eta_i < etaCount and eta_i != tuple[0]:
-                        finalEt += '0'*bit_size*int(phiCount) + '\n' # fill lines with 0 until next data value reached
-                        eta_i += 1
-                    phi_i = 0 # reset phi index to far left
-                    while phi_i < phiCount and phi_i != tuple[1]:
-                        finalEt += '0'*bit_size # fill with zeroes until first data point of new eta slice
-                        phi_i += 1
-                    currentV = tuple[2] # set ET sum to new data value's ET
+                    if 0 < tuple[1] < phiCount: # if phi in specified range
+                        finalEt += currentV # write current ET to file
+                        phi_i += 1 # move to next phi slice
+                        finalEt += '0'*bit_size*int(phiCount-phi_i)+'\n' # no more values in eta slice, finish line with 0s
+                        eta_i += 1 # move to next eta slice
+                        while eta_i < etaCount and eta_i != tuple[0]:
+                            finalEt += '0'*bit_size*int(phiCount) + '\n' # fill lines with 0 until next data value reached
+                            eta_i += 1
+                        phi_i = 0 # reset phi index to far left
+                        while phi_i < phiCount and phi_i != tuple[1]:
+                            finalEt += '0'*bit_size # fill with zeroes until first data point of new eta slice
+                            phi_i += 1
+                        currentV = tuple[2] # set ET sum to new data value's ET
 
             finalEt += currentV # write final ET sum to file
             phi_i += 1
