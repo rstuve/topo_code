@@ -20,7 +20,6 @@ etaSet = 1.4 # max eta value
 etaGran = .125 # eta granularity
 phiSet = 3.1 # max phi
 phiGran = .1
-eta_dec = 3 # decimal places needed for eta value
 sample = 1 # sample number that data is taken from
 filename = '../data/user.bochen.25650990.OUTPUT._000001.root' # if changing files or cycles, ensure cycle still
 cycle = "SCntuple;2"                                  # has ['scells_Et'] in directory
