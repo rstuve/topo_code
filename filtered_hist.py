@@ -5,7 +5,7 @@ Author: Ryan Stuve
 Moves transverse energy data from root file to numpy array saved to file,
 presents it as histogram using matplotlib.pyplot
 
-uses makeHist() to create file 'npfile.npz', function can be exported
+uses makeHist() to create file 'npfile.npz', function can be exported (see hist_coe.py)
 """
 from ROOT import TFile
 import numpy as np
@@ -19,20 +19,22 @@ def printProgress(event, numEntries):
         print("Loading: [{:<10s}] {}% complete".format('▭'*int(progress / 10), progress), end='\r')
 
 def makeHist(cycle='2',v=True,layer=1, numEntries = 0, progress = False):
-    'main function, produces np histogram and saves it to file npfile.npz'
+    """ produces np histogram and saves it to file npfile.npz 
+        v prints updates to stdout, progress shows progress bar """
+    
     etaSet = 1.4 # max eta value
     etaGran = .125 # eta granularity
     phiSet = 3.1 # max phi
     phiGran = .1
-    binSize = 50
-    max = 1000
+    binSize = 50 # how many MeV per hist bin
+    max = 1000 # max value of histogram
 
     if v:
         print('Preprocessing...')
 
     f = TFile('../data/user.bochen.25650990.OUTPUT._000001.root')
     tree = f.Get("SCntuple;"+cycle)
-    if numEntries == 0:
+    if numEntries == 0: # unspecified number of events, use all
         numEntries = tree.GetEntries()
 
     Et = [] # array to store Et values
@@ -86,7 +88,7 @@ def makeHist(cycle='2',v=True,layer=1, numEntries = 0, progress = False):
 
     return hist, b
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # shows histogram
     hist, b = makeHist()
     plt.plot(b,hist, ds = 'steps')
     plt.title("scells_Et_Cycle_"+cycle)
