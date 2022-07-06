@@ -1,0 +1,35 @@
+Most scripts require root file saved in sibling directory called "data"
+
+For root file to .coe files:
+  - root_to_coe.py
+      * can specify layers, bit length, ranges and granularities of slices
+      * loops through events, creating file for each in which .coe files are made for each layer
+      * .coe files will have header with info and grid of lines and columns of ET values
+
+To visualize .coe files:
+  - visualize_coe.py
+     * specify folder of run, layer, and event
+     * shows visualization of .coe file, whitespace is 0 energy detected
+     
+To compare .coe to .root:
+  - filtered_hist.py
+     * specify layer and number of events
+     * has function makeHist() that saves numpy array to 'npfile.npz' in data directory
+     * if called as main, also plots histogram
+     
+  - hist_coe.py
+     * specify layer, number of events, run folder
+     * calls makeHist() from filtered_hist, can edit parameters in script
+     * loops over and plots data from .coe files layered with comparison from filtered_hist
+     * can comment out lines to get rid of comparison graph
+     
+To visualize original data:
+  - filtered_hist.py (see above)
+  - unfiltered_hist.py (plots raw ET values from root file, no layers or slices)
+  - one_layer_hist.py (plots one layer of data for all or some events, no slices)
+  - one_event_hist.py (plots all data for one event, no layers or slices)
+
+To manipulate original data from terminal:
+  - open_file.py
+     * best when called as >>> python -i open_file.py
+     * returns variable "data" which stores arrays of data, good for sampling/debugging
