@@ -141,7 +141,7 @@ if __name__ == "__main__":
         for layer in layers:
             # make a list of tuples with form (eta, phi, ET) for all ET data given in that layer
             l = [(tuple[1:]) for tuple in zip(samples,etas,phis,Ets) if tuple[0] == layer]
-            l.sort()
+            l.sort() # sort by eta indices and then phi indices in order for loop to work
             eta_i = 0 # initialize indices at 0
             phi_i = 0
             currentV = '0'*bit_size # ET sum at current eta and phi, reset when either changes
