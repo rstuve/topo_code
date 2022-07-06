@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 
 # Get file and data
-run_folder = '2022_07_03-h20-m25-s58_SCntuple;2'
+run_folder = '2022_07_03-h20-m25-s58_SCntuple;2' # change based off location of event
 event = 179
 layer = 0
 
@@ -20,6 +20,7 @@ filename = 'Cell_EtsLayer'+str(layer)+'.coe'
 with open(path+filename) as f:
     lines = f.readlines()
 
+#== get info from header ===============
 header = lines[0]
 bit_size = int(header[137:])
 etaSet = float(header[73:76]) # max eta value, 3 digits including decimal
@@ -35,9 +36,10 @@ for line in lines[3:-1]:
     EtT = [int(dataString[i:i+bit_size], 2) for i in range(0, len(dataString), bit_size)]
     Ets = np.append(Ets, np.array([EtT]), axis=0)
 
-if not np.any(Ets):
+if not np.any(Ets): # if there are no values besides 0s
     raise ValueError("plot requires at least 1 Et value")
-#Plot np.array
+    
+#== Plot np.array =================
 fig = plt.figure()
 ax = fig.add_subplot(111)
 cax = ax.matshow(Ets, norm = LogNorm(),extent=[-phiSet,phiSet,-etaSet,etaSet])
