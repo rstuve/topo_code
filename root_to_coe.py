@@ -15,7 +15,7 @@ import numpy as np
 ## 2) USER SETTINGS _________________________________________
 
 ## 2a) USER INPUTS _____________________________
-bit_size = 10 # max size of .coe file entry
+bit_size = 14 # max size of .coe file entry
 allowNegEts = False
 etaSet = 1.4 # max eta value
 etaGran = .125 # eta granularity
@@ -125,7 +125,7 @@ if __name__ == "__main__":
     cycle_start=time_format % time.localtime()[0:6]
     print('loop start time :', cycle_start)
 
-    for event in range(1):#numOfEvents):
+    for event in range(1000):#numOfEvents):
         showProgress(event)
         eventFolder = SaveDirNameEvents+'event_%s/' % event
         os.mkdir(eventFolder)
