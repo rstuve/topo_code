@@ -1,11 +1,12 @@
 """
 Ryan Stuve
-Modified: 07/06/2022
+Modified: 07/15/2022
 Extracts ET data from .root file, moves into individual .coe files for each
 layer per event with specified bit width, organized by eta and phi
 Files stored in sibling directory named "data", must be created before run and
 contain .root file
-Number of event files can be changed in loop header on line 131
+
+Number of event files can be changed in line 163
 """
 
 ## 1) IMPORTS ___________________________
@@ -17,14 +18,18 @@ import numpy as np
 ## 2a) USER INPUTS _____________________________
 bit_size = 10 # max size of .coe file entry
 allowNegEts = False
+threshold = False
 etaSet = 1.4 # max eta value
 etaGran = .125 # eta granularity
 etaCount = etaSet*2//etaGran + 1 # number of eta slices, max index
 phiSet = 3.1 # max phi
-phiGran = .2
+phiGran =.098
 phiCount = phiSet*2//phiGran + 1 # number of phi slices, max index
+coeLineLength = 128
+thresholds = {0:180,1:30,2:140,3:30} # Averages eyeballed from noise_tot_plot_OFLCOND-MC12-HPS-19-200-25.pdf
 
-layers = [1,2] # layers to process, ie: [0,1,2,3,4,5] does layers 0-5
+
+layers = [0,1,2,3] # layers to process, ie: [0,1,2,3,4,5] does layers 0-5
 filename = '../data/user.bochen.25650990.OUTPUT._000001.root'
 cycle = "SCntuple;2"
 Reason='To condense ET data from cycle into .coe files' # printed out in readme file
@@ -53,7 +58,6 @@ newDir = CurrentDir+dataDir+pyScriptNameBase
 dirfmt=str(newDir+'/%4d_%02d_%02d-h%02d-m%02d-s%02d_'+cycle)
 SaveDirName = dirfmt % time.localtime()[0:6]
 SaveDirName=SaveDirName+'/'
-SaveDirNameEvents = SaveDirName+'by_event/'
 try:
     os.mkdir(newDir + '/') # creates directory with same name as script
 except:
@@ -61,7 +65,6 @@ except:
 
 try:
     os.mkdir(SaveDirName)
-    os.mkdir(SaveDirNameEvents)
     print('Save-to directory is ',SaveDirName[-35:])
 except OSError:
     print('save-to directory already exists')
@@ -78,14 +81,16 @@ def modifyEt(Et):
     'Modifies and returns binary representations of decimal ET values'
     global overflow_count
     maxNum = findMax()
-    # Convert Et from Mev to Gev: Et /= 1000
+    # Can convert Et from Mev to Gev here: Et /= 1000
     if Et < 0:
         Et = 0 if allowNegEts else None # sets all negative values to 0, not tested
-    if Et >= maxNum:
-        Et = '1'*bit_size # changes overflow values to max binary value
+    elif threshold and Et < thresholds[layer]*2:
+        Et = 0
+    elif Et >= maxNum:
+        Et = maxNum - 1 # changes overflow values to max binary value
         overflow_count += 1
-    else:
-        Et = '{0:0{1}b}'.format(int(Et),bit_size) # convert to binary of specified bit size
+
+    Et = '{0:0{1}b}'.format(int(Et),bit_size) # convert to binary of specified bit size
 
     return Et
 
@@ -101,7 +106,7 @@ def sumBin(bin1,bin2):
 
 def showProgress(event):
     'visual progress bar during script runtime'
-    checkpoint = numOfEvents // 100
+    checkpoint = 10#numOfEvents // 100
     if event % checkpoint == 0:
         progress = int(event/checkpoint)
         print("Creating files: [{:<10s}] {}% complete".format('▭'*int(progress / 10), progress), end='\r')
@@ -111,11 +116,14 @@ if __name__ == "__main__":
 
     ###__Create Readme.txt file in savedir________________________________#
     ThisCode=os.path.basename(__file__) # get name of this script when it runs
-    file_name='ReadMe'
+    file_name='ReadMe.txt'
     path = os.path.join(SaveDirName, file_name)
     with open(path, 'w+') as stream:
         stream.write(('py script start time : '+ str(time_start)+'\r\n'+'\r\n'))
         stream.write(('Data File used : '+ filename+'\r\n'))
+        stream.write(('eta granularity : '+ '{}'.format(etaGran)+'\r\n'))
+        stream.write(('phi granularity : '+ '{}'.format(phiGran)+'\r\n'))
+        stream.write(('units : MeV'+'\r\n'))
         stream.write(('The python script ran was :   '+ThisCode+'\r\n'))
         stream.write(('The purpose of this run was : '+Reason+'\r\n'))
         stream.write(('save to directory is '+SaveDirName+'\r\n'+'\r\n'))
@@ -125,17 +133,41 @@ if __name__ == "__main__":
     cycle_start=time_format % time.localtime()[0:6]
     print('loop start time :', cycle_start)
 
-    for event in range(1):#numOfEvents): # Can be changed to reduce events processed
-        showProgress(event)
-        eventFolder = SaveDirNameEvents+'event_%s/' % event
-        os.mkdir(eventFolder)
-        tree.GetEntry(event) # reduces tree to single event, changes for each iteration
-        Ets=list(map(modifyEt, tree.scells_Et)) # apply modification to ET values
-        samples = tree.scells_sampling
-        etas = (np.asarray(tree.scells_eta) + etaSet) // etaGran # reduces etas to indices starting at 0
-        phis = (np.asarray(tree.scells_phi) + phiSet) // phiGran # same as etas above
+    for layer in layers:
+        print()
+        print(f'Processing layer {layer}')
+        layerDir = SaveDirName + f"layer_{layer}/"
+        os.mkdir(layerDir)
 
-        for layer in layers:
+        f1 = open(layerDir + "file_1"+EXT, 'a') # create pointers to each file
+        f2 = open(layerDir + "file_2"+EXT, 'a')
+        f3 = open(layerDir + "file_3"+EXT, 'a')
+        f4 = open(layerDir + "file_4"+EXT, 'a')
+        f5 = open(layerDir + "file_5"+EXT, 'a')
+        files = [f1,f2,f3,f4,f5] # store pointers in list to iterate over
+
+#____ Write headers for each file ___________________
+        i = 1
+        for f in files:
+            f.write(";InputFileName = {0}, wrote: {1}, \
+Eta range: (-{2},{2}), step={3}, \
+Phi range: (-{4},{4}), step={5},  \
+bit length = {6}\n\
+".format(f'layer_{layer}/file_{i}'+EXT, date, etaSet, etaGran, phiSet, phiGran,bit_size))
+
+            f.write('memory_initialization_radix =2;\n')
+            f.write('memory_initialization_vector =\n')
+            i += 1
+
+#_______ End header __________________________________
+        for event in range(500):#numOfEvents): # Can be changed to reduce events processed
+            showProgress(event)
+            tree.GetEntry(event) # reduces tree to single event, changes for each iteration
+            Ets=list(map(modifyEt, tree.scells_Et)) # apply modification to ET values
+            samples = tree.scells_sampling
+            etas = (np.asarray(tree.scells_eta) + etaSet) // etaGran # reduces etas to indices starting at 0
+            phis = (np.asarray(tree.scells_phi) + phiSet) // phiGran # same as etas above
+
             # make a list of tuples with form (eta, phi, ET) for all ET data given in that layer
             l = [(tuple[1:]) for tuple in zip(samples,etas.copy(),phis.copy(),Ets.copy()) if tuple[0] == layer]
             l.sort() # sort by eta indices and then phi indices in order for loop to work
@@ -146,27 +178,39 @@ if __name__ == "__main__":
             finalEt = '' # string that holds ET values, written to file at end of loop
 
             #loop through phi slices left to right, moving to next eta slice when done
+            lines = []
             for tuple in l:
                 if tuple[0] == eta_i: # if same eta
                     if tuple[1] == phi_i: # if same phi
                         currentV = sumBin(currentV, tuple[2]) # add ET to sum at that point
 
-                    elif tuple[1] < phiCount:
+                    elif 0 <= tuple[1] < phiCount:
                         finalEt += currentV # write current ET to file
                         phi_i += 1 # move to next phi slice
                         while phi_i != tuple[1]:
+                            if phi_i > phiCount:
+                                print(prev_tuple)
+                                print(event)
+                                print(tuple)
+                                print(phi_i)
+                                print()
+                                quit()
                             finalEt += '0'*bit_size # fill grid with 0s until another data value is reached
                             phi_i += 1
                         currentV = tuple[2] # set ET sum to new data value's ET
 
-                elif 0 < tuple[0] < etaCount: # if eta in specified eta range
-                    if 0 < tuple[1] < phiCount: # if phi in specified range
+                elif 0 <= tuple[0] < etaCount: # if eta in specified eta range
+                    if 0 <= tuple[1] < phiCount: # if phi in specified range
                         finalEt += currentV # write current ET to file
                         phi_i += 1 # move to next phi slice
-                        finalEt += '0'*bit_size*int(phiCount-phi_i)+'\n' # no more values in eta slice, finish line with 0s
+                        finalEt += '0'*bit_size*int(phiCount-phi_i) # no more values in eta slice, finish line with 0s
+                        lines.append(finalEt)
+                        finalEt = ''
                         eta_i += 1 # move to next eta slice
                         while eta_i < etaCount and eta_i != tuple[0]:
-                            finalEt += '0'*bit_size*int(phiCount) + '\n' # fill lines with 0 until next data value reached
+                            finalEt += '0'*bit_size*int(phiCount) # fill lines with 0 until next data value reached
+                            lines.append(finalEt)
+                            finalEt = ''
                             eta_i += 1
                         phi_i = 0 # reset phi index to far left
                         while phi_i < phiCount and phi_i != tuple[1]:
@@ -174,26 +218,25 @@ if __name__ == "__main__":
                             phi_i += 1
                         currentV = tuple[2] # set ET sum to new data value's ET
 
+
             finalEt += currentV # write final ET sum to file
             phi_i += 1
-            finalEt += '0'*bit_size*int(phiCount-phi_i)+'\n' # fill line with 0s
+            finalEt += '0'*bit_size*int(phiCount-phi_i) # fill line with 0s
+            lines.append(finalEt)
+            finalEt = ''
             eta_i += 1
             while eta_i < etaCount:
-                finalEt += '0'*bit_size*int(phiCount) + '\n' # fill all remaining lines with 0s
+                finalEt += '0'*bit_size*int(phiCount) # fill all remaining lines with 0s
+                lines.append(finalEt)
+                finalEt = ''
                 eta_i += 1
 
-            newFileName = 'Cell_EtsLayer%s'% layer+EXT
-            with open(eventFolder+newFileName, 'a') as f:
-                # Write header
-                f.write(";InputFileName = {0}, wrote: {1}, \
-Eta range: (-{2},{2}), step={3}, \
-Phi range: (-{4},{4}), step={5}  \
-bit length = {6}\n\
-".format(newFileName, date, etaSet, etaGran, phiSet, phiGran,bit_size))
+            for line in lines:
+                for i in range(0, len(line), coeLineLength):
+                    files[i//coeLineLength].write(line[i:i+coeLineLength]+'\n')
 
-                f.write('memory_initialization_radix =2;\n')
-                f.write('memory_initialization_vector =\n')
-                f.write(finalEt) # grid of ET values, starts on fourth line of file
+        for f in files:
+            f.close()
 
 #== finish process ====================================================
     cycle_end=time_format % time.localtime()[0:6]

@@ -18,16 +18,17 @@ def printProgress(event, numEntries):
         progress = int(event/checkpoint)
         print("Loading: [{:<10s}] {}% complete".format('▭'*int(progress / 10), progress), end='\r')
 
-def makeHist(cycle='2',v=True,layer=1, numEntries = 0, progress = False):
-    """ produces np histogram and saves it to file npfile.npz 
+def makeHist(cycle='2',v=True,layer=1, numEntries = 0, progress = False, threshold = False):
+    """ produces np histogram and saves it to file npfile.npz
         v prints updates to stdout, progress shows progress bar """
-    
+
     etaSet = 1.4 # max eta value
     etaGran = .125 # eta granularity
     phiSet = 3.1 # max phi
-    phiGran = .1
+    phiGran = .098
     binSize = 50 # how many MeV per hist bin
     max = 1000 # max value of histogram
+    thresholds = {0:180,1:30,2:140,3:30}
 
     if v:
         print('Preprocessing...')
@@ -54,6 +55,9 @@ def makeHist(cycle='2',v=True,layer=1, numEntries = 0, progress = False):
         currentV = 0
 
         for tuple in l:
+            if threshold:
+                if tuple[2] <= thresholds[layer] * 2:
+                    continue # remove value, doesn't pass threshold
             if tuple[0] == eta_i: # if same eta
                 if tuple[1] == phi_i: # if same phi
                     currentV += tuple[2] # in same location, added together
@@ -78,13 +82,13 @@ def makeHist(cycle='2',v=True,layer=1, numEntries = 0, progress = False):
     if v:
         print("Converting data...")
     if v:
-        print("Data processed, creating histogram...")
+        print("Data processed, creating histogram...\n")
 
     Et = np.asarray(Et)
     hist, bins = np.histogram(Et, bins = int(max/binSize), range=[0,max])
 
     b = (bins[:-1] + bins[1:])/2
-    np.savez('../data/npfile.npz', hist)
+    #np.savez('../data/npfile.npz', hist)
 
     return hist, b
 
