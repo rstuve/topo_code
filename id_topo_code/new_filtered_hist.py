@@ -16,7 +16,7 @@ def makeHist(cycle='2',layer=1, numEntries = 0, threshold = False):
 
     binSize = 50 # how many MeV per hist bin
     max = 1000 # max value of histogram
-    thresholds = {0:180,1:30,2:140,3:30}
+    thresholds = {0:180,1:30,2:140,3:50}
 
     f = TFile('../data/user.bochen.25650990.OUTPUT._000001.root')
     tree = f.Get("SCntuple;"+cycle)
@@ -34,23 +34,16 @@ def makeHist(cycle='2',layer=1, numEntries = 0, threshold = False):
          and (not threshold or tuple[2] >= thresholds[layer]*2)]
 
     etList = np.asarray(etList)
-    return etList
-    #hist, bins = np.histogram(etList, bins = int(max/binSize), range=[0,max])
+    hist, bins = np.histogram(etList, bins = int(max/binSize), range=[0,max])
 
-    #b = (bins[:-1] + bins[1:])/2
-    #return hist, b
+    b = (bins[:-1] + bins[1:])/2
+    return hist, b
 
 if __name__ == '__main__':  # shows histogram
-    ets = []
-    for i in range(4):
-        ets.append(makeHist(layer=i, numEntries=1,threshold=False))
-    np.savez('../data/et_lists/event1000_no_thresh.npz',ets[0],ets[1],ets[2],ets[3])
-    quit()
-    '''
+
     hist, b = makeHist()
     plt.plot(b,hist, ds = 'steps')
     plt.title("scells_Et_Cycle_"+cycle)
     plt.xlabel("Tranverse Energy (Mev)")
     plt.ylabel("Counts / {binSize} MeV")
     plt.show()
-    '''

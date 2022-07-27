@@ -12,7 +12,7 @@ from new_filtered_hist import makeHist
 
 
 # Get files and data
-run_folder = '100_thresh' # change to run folder
+run_folder = '2022_07_27-h11-m11-s42_SCntuple;2' # change to run folder
 layers = [0,1,2,3] # which layer is being compared
 numOfEvents = 100
 threshold = True
@@ -60,8 +60,12 @@ for layer in layers:
     for file in files:
         file.close()
 
-    for line in lines:
-        EtT = [int(line[i:i+bit_size], 2) for i in range(0, len(line), bit_size)]
+    linesPerEvent = len(lines)/numOfEvents
+    for i in range(len(lines)):
+        EtT = [int(lines[i][j:j+bit_size], 2) for j in range(0, len(lines[i]), bit_size)]
+        if i%linesPerEvent == 0 or i%linesPerEvent == linesPerEvent-1:
+            EtT.pop(0)
+            EtT.pop()
         for value in EtT:
             if value != 0: # ignore 0 values
                 Ets.append(value)

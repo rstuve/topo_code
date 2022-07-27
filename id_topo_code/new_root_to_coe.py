@@ -1,6 +1,6 @@
 """
 Ryan Stuve
-Modified: 07/25/2022
+Modified: 07/27/2022
 Extracts ET data from .root file, moves into individual .coe files for each
 layer per event with specified bit width, organized by eta and phi
 Files stored in sibling directory named "data", must be created before run and
@@ -20,10 +20,13 @@ from funcMap import makeMap
 bit_size = 10 # max size of .coe file entry
 allowNegEts = False
 threshold = True
+corners = True
+numOfEvents = 100
+
 etaSet = 1.4 # max eta value
 phiSet = 3.14159 # max phi
 coeLineLength = 128
-thresholds = {0:180,1:30,2:140,3:30} # Averages eyeballed from noise_tot_plot_OFLCOND-MC12-HPS-19-200-25.pdf
+thresholds = {0:180,1:30,2:140,3:50} # Averages eyeballed from noise_tot_plot_OFLCOND-MC12-HPS-19-200-25.pdf
 Granularities = {0: (0.02500000037252903, 0.09817477315664291),
                  1: (0.0031250000465661287, 0.09817477315664291), # taken from caloCellsMap file
                  2: (0.02500000037252903, 0.02454369328916073),
@@ -45,7 +48,6 @@ print('start time :', time_start)
 ## 2c) SET DATA FILE/DIR ____________________________
 file = TFile(filename)
 tree = file.Get(cycle)
-numOfEvents = tree.GetEntries() # loop over all events, can be changed on line 131
 EXT='.coe'
 
 ## 2d) Create/Set Save-Directory Folder__________________
@@ -104,9 +106,6 @@ def showProgress(event):
 if __name__ == "__main__":
     ThisCode=os.path.basename(__file__) # get name of this script when it runs
 
-    cycle_start=time_format % time.localtime()[0:6]
-    print('loop start time :', cycle_start)
-
     for layer in layers:
         print()
         print(f'Processing layer {layer}')
@@ -116,6 +115,12 @@ if __name__ == "__main__":
 # _____import data from CaloCellsMap file _____
         grid, ls = makeMap(layer)
         idGrid = np.asarray(grid)
+
+        with open(layerDir+'idGrid.txt', 'w') as gridFile:
+            for line in idGrid:
+                lineString = ' '.join([str(id) for id in line]) # create one long line for each eta slice
+                gridFile.write(lineString+'\n')
+
         mainIDs, mainEtas, mainPhis = zip(*ls)
         mainEtas = np.array(mainEtas)
 
@@ -127,16 +132,17 @@ if __name__ == "__main__":
 ###__Create Readme.txt file per layer________________________________#
         file_name='ReadMe.txt'
         path = os.path.join(layerDir, file_name)
-        with open(path, 'w+') as stream:
-            stream.write(('py script start time : '+ str(time_start)+'\r\n'+'\r\n'))
-            stream.write(('Data File used : '+ filename+'\r\n'))
-            stream.write(('Layer : {}'.format(layer)+'\r\n'))
-            stream.write(('eta granularity : '+ '{}'.format(etaGran)+'\r\n'))
-            stream.write(('phi granularity : '+ '{}'.format(phiGran)+'\r\n'))
-            stream.write(('units : MeV'+'\r\n'))
-            stream.write(('The python script ran was :   '+ThisCode+'\r\n'))
-            stream.write(('The purpose of this run was : '+Reason+'\r\n'))
-            stream.write(('save to directory is '+SaveDirName+'\r\n'+'\r\n'))
+        with open(path, 'w') as stream:
+            stream.write(('The python script ran was :   '+ThisCode+'\n'))
+            stream.write(('The purpose of this run was : '+Reason+'\n'))
+            stream.write(('Data File used : '+ filename+'\n'))
+            stream.write(('save to directory is '+SaveDirName+'\n\n'))
+            stream.write(('Layer : {}'.format(layer)+'\n'))
+            stream.write(('eta granularity : '+ str(etaGran)+'\n'))
+            stream.write(('phi granularity : '+ str(phiGran)+'\n'))
+            stream.write(('units : MeV'+'\n\n'))
+            stream.write(('Number of events: '+str(numOfEvents)+'\n\n'))
+            stream.write(('py script start time : '+ str(time_start)+'\n'))
             # adds script end time at bottom of code
 ###__End of Create/write Readme.txt File =================
 
@@ -145,7 +151,7 @@ if __name__ == "__main__":
             files.append(open(layerDir + f"file_{i}"+EXT, 'a')) # stores pointer to file
 
 #____ Write headers for each file ___________________
-        i = 1
+        i = 0
         for f in files:
             f.write(";InputFileName = {0}, wrote: {1}, \
 Eta range: (-{2},{2}), step={3}, \
@@ -159,13 +165,14 @@ bit length = {6}\n\
 
 
 #_______ End header __________________________________
-        for event in range(100):#numOfEvents): # Can be changed to reduce events processed
+        for event in range(numOfEvents):
             showProgress(event)
             etGrid = np.full((len(grid),phiCount), '0000000000', dtype='<U10')
-            etGrid[0,0] = '{0:0{1}b}'.format(cornerValues[layer],bit_size)
-            etGrid[0,-1] = '{0:0{1}b}'.format(cornerValues[layer]+1,bit_size)
-            etGrid[-1,0] = '{0:0{1}b}'.format(cornerValues[layer]+2,bit_size)
-            etGrid[-1,-1] = '{0:0{1}b}'.format(cornerValues[layer]+3,bit_size)
+            if corners:
+                etGrid[0,0] = '{0:0{1}b}'.format(cornerValues[layer],bit_size)
+                etGrid[0,-1] = '{0:0{1}b}'.format(cornerValues[layer]+1,bit_size)
+                etGrid[-1,0] = '{0:0{1}b}'.format(cornerValues[layer]+2,bit_size)
+                etGrid[-1,-1] = '{0:0{1}b}'.format(cornerValues[layer]+3,bit_size)
             tree.GetEntry(event) # reduces tree to single event, changes for each iteration
             Ets=list(map(modifyEt, tree.scells_Et)) # apply modification to ET values
             samples = tree.scells_sampling
@@ -183,14 +190,16 @@ bit length = {6}\n\
                             idloc = np.where(idGrid == mainIDs[i]) # find location of matching eta
                             if idloc[0].size > 0: # if on the grid
                                 loc = (idloc[0][0],idloc[1][0]) # get grid location
-                                etGrid[loc] = entry[2] # store value in location
+                                if etGrid[loc] == '0000000000': # don't overwrite corners
+                                    etGrid[loc] = entry[2] # store value in location
                             break
 
                 else:
                     idloc = np.where(idGrid == mainIDs[etaIndexes[0]]) # find location of matching eta
                     if idloc[0].size > 0: # if match on grid
                         loc = (idloc[0][0],idloc[1][0]) # find grid location
-                        etGrid[loc] = entry[2] # store value in location
+                        if etGrid[loc] == '0000000000': # don't overwrite corners
+                            etGrid[loc] = entry[2] # store value in location
 
             for line in etGrid:
                 lineString = ''.join(line) # create one long line for each eta slice
@@ -202,12 +211,10 @@ bit length = {6}\n\
             f.close()
 
 #== finish process ====================================================
-    cycle_end=time_format % time.localtime()[0:6]
-    print('\nloop end time :', cycle_end)
 
     print('Done with files')
     time_end=time_format % time.localtime()[0:6]
     for layer in layers:
         with open(os.path.join(SaveDirName + f"layer_{layer}/ReadMe.txt"), 'a') as stream:
-            stream.write(('\npy script end time : '+ str(time_end)+'\r\n'+'\r\n'))
+            stream.write(('npy script end time : '+ str(time_end)))
     print('end time : ', time_end)
