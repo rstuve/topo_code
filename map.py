@@ -1,7 +1,7 @@
 from ROOT import TFile
 import matplotlib.pyplot as plt
 ### END Imports==============================================
-layer = 1
+layer = 4
 filename = '../data/from_jochen/CaloCellsMap.root'
 cycle = "caloCellsMap;1"
 newFile = '../data/idMap.coe'
@@ -14,14 +14,22 @@ tree = file.Get(cycle)
 tree.GetEntry(0) # reduces tree to single event
 
 samples = tree.cells_sampling
-etas = tree.cells_eta
-ids = tree.cells_ID
+mainEtas = tree.cells_eta
+mainIds = tree.cells_ID
 
-etaGran = 0.0031250000465661287
-phiGran = 0.09817477315664291
-l = [tuple[1:] for tuple in zip(samples,ids,etas) if tuple[0] == layer and -1.4 <= tuple[2] and tuple[1] <= 765722238]
-l.sort()
-ids, etas = zip(*l)
+layers = [0,1,2,3]
+
+lines = []
+artists = []
+plt.figure(num=1,figsize=(14,7.5))
+for i in layers:
+    l=[tuple[1:] for tuple in zip(samples,mainIds,mainEtas) if tuple[0] == i]# and -1.4 <= tuple[2] and tuple[1] <= 765722238]
+    ids, etas = zip(*l)
+    artists.append(plt.scatter(etas,ids,s=1))
+    lines.append(f'layer {i}')
+plt.legend(artists,lines)
+plt.show()
+quit()
 
 lead_etas = []
 groups = []

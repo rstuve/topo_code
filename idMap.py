@@ -1,6 +1,7 @@
 from ROOT import TFile
+import matplotlib.pyplot as plt
 ### END Imports==============================================
-layer = 3
+layer = 1
 filename = '../data/from_jochen/CaloCellsMap.root'
 cycle = "caloCellsMap;1"
 newFile = '../data/idMap_layer{}.coe'
@@ -10,20 +11,17 @@ file = TFile(filename)
 tree = file.Get(cycle)
 tree.GetEntry(0) # reduces tree to single event
 
-for layer in range(4):
-    samples = tree.cells_sampling
-    mainEtas = tree.cells_eta
-    mainIds = tree.cells_ID
+samples = tree.cells_sampling
+mainEtas = tree.cells_eta
+mainIds = tree.cells_ID
 
-    ids, etas = zip(*[tuple[1:] for tuple in zip(samples,mainIds,mainEtas) if tuple[0] == layer])
-    minID = ids[0]
+ids, etas = zip(*[tuple[1:] for tuple in zip(samples,mainIds,mainEtas) if tuple[0] == layer])
+minID = ids[0]
 
 
-    i = list(mainIds).index(minID)
-    phiGran = tree.cells_phiGranularity[i]
-    etaGran = tree.cells_etaGranularity[i]
-    print(etaGran, phiGran)
-quit()
+i = list(mainIds).index(minID)
+phiGran = tree.cells_phiGranularity[i]
+etaGran = tree.cells_etaGranularity[i]
 lineLength = int(3.14*2/phiGran) + bool((3.14*2/phiGran) % 1)
 
 
